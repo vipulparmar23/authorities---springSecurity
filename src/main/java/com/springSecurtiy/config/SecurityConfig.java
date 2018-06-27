@@ -1,50 +1,53 @@
 package com.springSecurtiy.config;
 
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.User.UserBuilder;
+
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+	
+	// Add reference to security datasource
+	
+	@Autowired
+	private DataSource securityDataSource;
+	
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		
-		// Add users for in-memory authentication
+		// jdbc authentication
 		
-		UserBuilder users = User.withDefaultPasswordEncoder();
-		auth.inMemoryAuthentication()
-			.withUser(users.username("John").password("test123").roles("EMPLOYEE"))
-			.withUser(users.username("Mary").password("test234").roles("EMPLOYEE", "MANAGER"))
-			.withUser(users.username("Steven").password("test345").roles("EMPLOYEE", "ADMIN"));
+		auth.jdbcAuthentication().dataSource(securityDataSource);
+		
 	}
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		
 		http.authorizeRequests()
-			.antMatchers("/resources/**").permitAll()
-			.antMatchers("/").hasRole("EMPLOYEE")
-			.antMatchers("/leaders/**").hasRole("MANAGER")
+			.antMatchers("/resources/**").permitAll() // adding resources path 
+			.antMatchers("/").hasRole("EMPLOYEE") // Setting up access control depending user roles 
+			.antMatchers("/leaders/**").hasRole("MANAGER") 
 			.antMatchers("/systems/**").hasRole("ADMIN")
 		//	.anyRequest().authenticated()
+			.and()				
+				.formLogin()	// Redirect for login
+				.loginPage("/myLoginPage")	// Redirecting to custom login page
+				.loginProcessingUrl("/authenticateTheUser") // URL that sends user to authentication process
+				.permitAll() 
 			.and()
-				.formLogin()
-				.loginPage("/myLoginPage")
-				.loginProcessingUrl("/authenticateTheUser")
-				.permitAll()
+			.logout().permitAll() 	
 			.and()
-			.logout().permitAll()	
-			.and()
-			.exceptionHandling()
-				.accessDeniedPage("/access-denied");
+			.exceptionHandling() // Exception if user is not authorized to access content
+			.accessDeniedPage("/access-denied");
+		
 	}
-
-	
-	
 }

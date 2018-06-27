@@ -36,7 +36,7 @@
 	</security:authorize>
 	
 	<security:authorize access="hasRole('ADMIN')">
-	
+	<hr>
 	<p>
 		<a href ="${pageContext.request.contextPath}/systems">System Upgrade</a> (For Admins only)
 	
